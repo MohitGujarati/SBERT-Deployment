@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Recommender</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--bg-card);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        /* Controls Section */
+        .controls {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .category-label {
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            background-color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Grid */
+        .articles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: #eff6ff;
+            color: var(--primary);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            align-self: flex-start;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .card-snippet {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .score-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .score-val {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .read-more {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .read-more:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-content">
+            <h1>Cognito News</h1>
+            <div>
+                <!-- Could add profile icon here -->
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="controls">
+            <div style="width: 100%; margin-bottom: 1rem;">
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem;">User Profile Simulation</h3>
+
+                <div class="category-group" style="margin-bottom: 1rem;">
+                    <span class="category-label">Active Interest (Category Filter):</span>
+                    <select id="categorySelect"
+                        style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border);">
+                        <option value="General">Default (Tech & Sports)</option>
+                        <option value="Technology">Technology Only</option>
+                        <option value="Sports">Sports Only</option>
+                        <option value="Health">Health</option>
+                        <option value="Business">Business</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div>
+                        <label style="display:block; font-weight:500; margin-bottom:0.25rem;">Liked Articles (One per
+                            line):</label>
+                        <textarea id="customLikes" rows="3"
+                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"
+                            placeholder="E.g. I love space exploration..."></textarea>
+                    </div>
+                    <div>
+                        <label style="display:block; font-weight:500; margin-bottom:0.25rem;">Reading History (One per
+                            line):</label>
+                        <textarea id="customHistory" rows="3"
+                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"
+                            placeholder="E.g. New advances in AI..."></textarea>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <button id="refreshBtn" class="btn" style="width: 100%;">Get Recommendations</button>
+        </section>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Analyzing preferences & fetching articles...</p>
+        </div>
+
+        <div id="results" class="articles-grid">
+            <!-- Articles will differ here -->
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('refreshBtn').addEventListener('click', fetchArticles);
+
+        async function fetchArticles() {
+            const btn = document.getElementById('refreshBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const catSelect = document.getElementById('categorySelect');
+
+            // Simulation inputs
+            const customLikes = document.getElementById('customLikes').value;
+            const customHistory = document.getElementById('customHistory').value;
+
+            // UI State
+            btn.disabled = true;
+            loading.style.display = 'block';
+            results.innerHTML = '';
+
+            // User preference logic
+            let categories = ["Technology", "Sports"]; // Default
+            if (catSelect.value !== "General") {
+                categories = [catSelect.value];
+            }
+
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        categories: categories,
+                        custom_likes: customLikes,
+                        custom_history: customHistory
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    renderArticles(data.articles);
+                } else {
+                    results.innerHTML = `<p style="color:red; text-align:center; width:100%;">Error: ${data.message}</p>`;
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                results.innerHTML = `<p style="color:red; text-align:center; width:100%;">Failed to connect to server.</p>`;
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderArticles(articles) {
+            const container = document.getElementById('results');
+
+            if (articles.length === 0) {
+                container.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1/-1;">No articles found. Try again.</p>`;
+                return;
+            }
+
+            articles.forEach(art => {
+                const card = document.createElement('article');
+                card.className = 'card fade-in';
+
+                card.innerHTML = `
+                    <div class="card-body">
+                        <span class="card-tag">${art.category}</span>
+                        <h2 class="card-title">${art.title}</h2>
+                        <p class="card-snippet">${art.body}</p>
+                        <div class="card-footer">
+                            <div class="score-badge">
+                                <span>Match:</span>
+                                <span class="score-val">${Math.round(art.score * 100)}%</span>
+                            </div>
+                            <a href="${art.url}" target="_blank" class="read-more">Read Full &rarr;</a>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Initial fetch on load
+        window.addEventListener('DOMContentLoaded', fetchArticles);
+    </script>
+</body>
+
+</html>
