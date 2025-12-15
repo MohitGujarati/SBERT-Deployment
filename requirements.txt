@@ -1,0 +1,6 @@
+Flask
+sentence-transformers
+scikit-learn
+python-dotenv
+numpy
+gunicorn
