@@ -1,4 +1,4 @@
-# Antigravity AI News Recommender
+# AI News Recommender
 
 An intelligent news recommendation system using **SBERT (Sentence-BERT)** for semantic similarity and **Maximal Marginal Relevance (MMR)** for diverse ranking.
 
