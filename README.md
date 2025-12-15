@@ -1,3 +1,14 @@
+---
+title: AI News Recommender
+emoji: 📰
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
+
 # AI News Recommender
 
 An intelligent news recommendation system using **SBERT (Sentence-BERT)** for semantic similarity and **Maximal Marginal Relevance (MMR)** for diverse ranking.
