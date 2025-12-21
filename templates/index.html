@@ -16,6 +16,8 @@
             --text-main: #1e293b;
             --text-secondary: #64748b;
             --border: #e2e8f0;
+            --accent-bg: #eff6ff;
+            --accent-border: #bfdbfe;
         }
 
         * {
@@ -61,7 +63,31 @@
             padding: 0 2rem;
         }
 
-        /* Controls Section */
+        /* AI SUMMARY */
+        .ai-summary {
+            background-color: var(--accent-bg);
+            border: 1px solid var(--accent-border);
+            border-left: 5px solid var(--primary);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            color: var(--text-main);
+            font-size: 1.05rem;
+            font-weight: 500;
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .ai-summary ul {
+            padding-left: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        .ai-summary li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* CONTROLS */
         .controls {
             background: var(--bg-card);
             padding: 1.5rem;
@@ -96,6 +122,7 @@
             cursor: pointer;
             transition: background-color 0.2s;
             font-size: 1rem;
+            width: 100%;
         }
 
         .btn:hover {
@@ -108,7 +135,7 @@
             opacity: 0.7;
         }
 
-        /* Grid */
+        /* GRID & CARDS */
         .articles-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -244,23 +271,17 @@
 </head>
 
 <body>
-
     <header>
         <div class="header-content">
             <h1>Cognito News</h1>
-            <div>
-                <!-- Could add profile icon here -->
-            </div>
         </div>
     </header>
-
     <main>
         <section class="controls">
             <div style="width: 100%; margin-bottom: 1rem;">
                 <h3 style="margin-bottom: 0.5rem; font-size: 1.1rem;">User Profile Simulation</h3>
-
                 <div class="category-group" style="margin-bottom: 1rem;">
-                    <span class="category-label">Active Interest (Category Filter):</span>
+                    <span class="category-label">Active Interest:</span>
                     <select id="categorySelect"
                         style="padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border);">
                         <option value="General">Default (Tech & Sports)</option>
@@ -270,37 +291,54 @@
                         <option value="Business">Business</option>
                     </select>
                 </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                    <div>
-                        <label style="display:block; font-weight:500; margin-bottom:0.25rem;">Liked Articles (One per
-                            line):</label>
-                        <textarea id="customLikes" rows="3"
-                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"
-                            placeholder="E.g. I love space exploration..."></textarea>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div><label>Liked Articles:</label><textarea id="customLikes" rows="3"
+                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"></textarea>
                     </div>
-                    <div>
-                        <label style="display:block; font-weight:500; margin-bottom:0.25rem;">Reading History (One per
-                            line):</label>
-                        <textarea id="customHistory" rows="3"
-                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"
-                            placeholder="E.g. New advances in AI..."></textarea>
+                    <div><label>Reading History:</label><textarea id="customHistory" rows="3"
+                            style="width:100%; padding:0.5rem; border:1px solid var(--border); border-radius:6px;"></textarea>
                     </div>
                 </div>
-
-
             </div>
-
-            <button id="refreshBtn" class="btn" style="width: 100%;">Get Recommendations</button>
+            <button id="refreshBtn" class="btn">Get Recommendations</button>
         </section>
+
+        <div id="summary-container" class="ai-summary"
+            style="display: {% if initial_data and initial_data.summary %}block{% else %}none{% endif %};">
+            {% if initial_data and initial_data.summary %}
+            <h3 style="margin-bottom:0.5rem; font-size:1.1rem;">💡 AI Top Stories Briefing</h3>
+            <ul>
+                {% for item in initial_data.summary %}
+                <li><strong>{{ item.title }}:</strong> {{ item.summary }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Analyzing preferences & fetching articles...</p>
+            <p>Analyzing...</p>
         </div>
 
         <div id="results" class="articles-grid">
-            <!-- Articles will differ here -->
+            {% if initial_data and initial_data.articles %}
+            {% for art in initial_data.articles %}
+            <article class="card">
+                <div class="card-body">
+                    <span class="card-tag">{{ art.category }}</span>
+                    <h2 class="card-title">{{ art.title }}</h2>
+                    <p class="card-snippet">{{ art.body }}</p>
+                    <div class="card-footer">
+                        <div class="score-badge">
+                            <span>Match:</span>
+                            <span class="score-val">{{ (art.score * 100)|round|int }}%</span>
+                        </div>
+                        <a href="{{ art.url }}" target="_blank" class="read-more">Read Full &rarr;</a>
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+            {% endif %}
         </div>
     </main>
 
@@ -311,45 +349,45 @@
             const btn = document.getElementById('refreshBtn');
             const loading = document.getElementById('loading');
             const results = document.getElementById('results');
-            const catSelect = document.getElementById('categorySelect');
+            const summaryBox = document.getElementById('summary-container');
 
-            // Simulation inputs
-            const customLikes = document.getElementById('customLikes').value;
-            const customHistory = document.getElementById('customHistory').value;
-
-            // UI State
+            // Don't clear results immediately to avoid "flash"
             btn.disabled = true;
             loading.style.display = 'block';
-            results.innerHTML = '';
+            if (summaryBox) summaryBox.style.display = 'none';
 
-            // User preference logic
-            let categories = ["Technology", "Sports"]; // Default
-            if (catSelect.value !== "General") {
-                categories = [catSelect.value];
-            }
+            // Get inputs
+            const catSelect = document.getElementById('categorySelect');
+            const customLikes = document.getElementById('customLikes').value;
+            const customHistory = document.getElementById('customHistory').value;
+            let categories = ["Technology", "Sports"];
+            if (catSelect.value !== "General") categories = [catSelect.value];
 
             try {
                 const response = await fetch('/api/recommend', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        categories: categories,
-                        custom_likes: customLikes,
-                        custom_history: customHistory
-                    })
+                    body: JSON.stringify({ categories, custom_likes: customLikes, custom_history: customHistory })
                 });
-
                 const data = await response.json();
 
                 if (data.status === 'success') {
+                    // Update Summary
+                    if (data.summary && Array.isArray(data.summary)) {
+                        let html = '<h3 style="margin-bottom:0.5rem; font-size:1.1rem;">💡 AI Top Stories Briefing</h3><ul>';
+                        data.summary.forEach(item => { html += `<li><strong>${item.title}:</strong> ${item.summary}</li>`; });
+                        html += '</ul>';
+                        summaryBox.innerHTML = html;
+                        summaryBox.style.display = 'block';
+                    }
+                    // Update Articles
                     renderArticles(data.articles);
                 } else {
-                    results.innerHTML = `<p style="color:red; text-align:center; width:100%;">Error: ${data.message}</p>`;
+                    results.innerHTML = `<p style="color:red;">Error: ${data.message}</p>`;
                 }
-
             } catch (error) {
-                console.error('Error:', error);
-                results.innerHTML = `<p style="color:red; text-align:center; width:100%;">Failed to connect to server.</p>`;
+                console.error(error);
+                results.innerHTML = `<p style="color:red;">Failed to connect.</p>`;
             } finally {
                 btn.disabled = false;
                 loading.style.display = 'none';
@@ -358,36 +396,29 @@
 
         function renderArticles(articles) {
             const container = document.getElementById('results');
+            container.innerHTML = ''; // Now we clear it to show new results
 
             if (articles.length === 0) {
-                container.innerHTML = `<p style="text-align:center; width:100%; grid-column: 1/-1;">No articles found. Try again.</p>`;
+                container.innerHTML = `<p style="text-align:center;">No articles found.</p>`;
                 return;
             }
 
             articles.forEach(art => {
                 const card = document.createElement('article');
                 card.className = 'card fade-in';
-
                 card.innerHTML = `
                     <div class="card-body">
                         <span class="card-tag">${art.category}</span>
                         <h2 class="card-title">${art.title}</h2>
                         <p class="card-snippet">${art.body}</p>
                         <div class="card-footer">
-                            <div class="score-badge">
-                                <span>Match:</span>
-                                <span class="score-val">${Math.round(art.score * 100)}%</span>
-                            </div>
+                            <div class="score-badge"><span>Match:</span><span class="score-val">${Math.round(art.score * 100)}%</span></div>
                             <a href="${art.url}" target="_blank" class="read-more">Read Full &rarr;</a>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(card);
             });
         }
-
-        // Initial fetch on load
-        window.addEventListener('DOMContentLoaded', fetchArticles);
     </script>
 </body>
 

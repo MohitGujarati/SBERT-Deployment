@@ -11,6 +11,10 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
 
+
+# --- NEW IMPORT FOR GENERATION ---
+from transformers import pipeline
+
 # Configure standard output for UTF-8 (prevents emoji/text crashes)
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
@@ -23,6 +27,15 @@ class NewsRecommender:
         print(" Loading SBERT model (all-MiniLM-L6-v2)...")
         self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2') 
         print(" SBERT model loaded successfully!\n")
+
+        # --- MAKE SURE THIS BLOCK IS HERE ---
+        print(" Loading Generative Model (google/flan-t5-small)...")
+        try:
+            self.summarizer = pipeline("text2text-generation", model="google/flan-t5-small")
+            print(" Generative Model loaded successfully!\n")
+        except Exception as e:
+            print(f" Warning: Could not load Generative Model. Error: {e}")
+            self.summarizer = None
         
         # Initialize with empty data (will be injected later)
         self.user_data = {"categories": [], "likes": [], "history": []}
@@ -170,7 +183,7 @@ class NewsRecommender:
     # --- STATIC DATA FOR SIMULATION ---
     STATIC_ARTICLES = [
         {"title": "SpaceX launches new Starship rocket successfully", "body": "Elon Musk's company achieved another milestone in space exploration with the successful orbit of the massive Starship rocket.", "date": "2024-05-20", "url": "#", "category": "Science"},
-        {"title": "NASA discovers potential life signs on Europa", "body": " scientists analyzing data from the Jupiter probe have found strong evidence of organic compounds in the ice shell.", "date": "2024-05-21", "url": "#", "category": "Science"},
+        {"title": "NASA discovers potential life signs on Europa", "body": "Scientists analyzing data from the Jupiter probe have found strong evidence of organic compounds in the ice shell.", "date": "2024-05-21", "url": "#", "category": "Science"},
         {"title": "New AI model predicts weather with 99% accuracy", "body": "DeepMind and Google Research release a new transformer model that outperforms traditional meteorological simulations.", "date": "2024-05-22", "url": "#", "category": "Technology"},
         {"title": "Apple announces revolutionary VR headset features", "body": "The latest Vision Pro update introduces neural interfaces and seamless mixed reality integration.", "date": "2024-05-23", "url": "#", "category": "Technology"},
         {"title": "Stock markets hit all-time high amidst tech boom", "body": "The S&P 500 and Nasdaq surged today as investor confidence in AI-driven companies continues to grow.", "date": "2024-05-24", "url": "#", "category": "Business"},
@@ -182,11 +195,73 @@ class NewsRecommender:
         {"title": "Summer blockbuster movie breaks box office records", "body": "The new superhero film has grossed over $1 billion in its opening week, shattering expectations.", "date": "2024-05-24", "url": "#", "category": "Entertainment"},
         {"title": "Pop star announces surprise world tour", "body": "Fans went wild as the dates were dropped on social media for the upcoming global stadium tour.", "date": "2024-05-25", "url": "#", "category": "Entertainment"},
         {"title": "Global summit addresses climate change urgency", "body": "World leaders gathered to sign a new accord aimed at reducing carbon emissions by 50% by 2030.", "date": "2024-05-20", "url": "#", "category": "Environment"},
+        {"title": "Quantum computer solves previously impossible equation", "body": "IBM's latest quantum processor successfully calculated complex molecular interactions in seconds.", "date": "2024-05-26", "url": "#", "category": "Science"},
+        {"title": "Electric vehicle sales surpass gas cars for first time", "body": "Global EV adoption reaches tipping point as prices drop and charging infrastructure expands.", "date": "2024-05-27", "url": "#", "category": "Technology"},
+        {"title": "Amazon announces drone delivery expansion", "body": "The retail giant will now deliver packages via autonomous drones to 50 new cities.", "date": "2024-05-28", "url": "#", "category": "Business"},
+        {"title": "Olympics opening ceremony dazzles millions", "body": "The spectacular event featured cutting-edge technology and celebrated global unity.", "date": "2024-05-29", "url": "#", "category": "Sports"},
+        {"title": "Mental health app reduces anxiety by 60% in study", "body": "New research validates the effectiveness of AI-powered therapy applications.", "date": "2024-05-30", "url": "#", "category": "Health"},
+        {"title": "Streaming service announces original series lineup", "body": "Netflix reveals 20 new shows featuring A-list actors and directors for the fall season.", "date": "2024-05-31", "url": "#", "category": "Entertainment"},
+        {"title": "Arctic ice levels reach unexpected recovery", "body": "Climate scientists observe surprising reversal in ice cap melting trends this year.", "date": "2024-06-01", "url": "#", "category": "Environment"},
+        {"title": "Mars rover discovers ancient water reservoir", "body": "Perseverance finds geological evidence of massive underground lake that existed billions of years ago.", "date": "2024-06-02", "url": "#", "category": "Science"},
+        {"title": "5G network coverage reaches 90% of urban areas", "body": "Telecommunications companies complete major infrastructure upgrades across major cities.", "date": "2024-06-03", "url": "#", "category": "Technology"},
+        {"title": "Startup unicorn valued at $10 billion in new funding", "body": "AI-focused company raises record Series D round from Silicon Valley investors.", "date": "2024-06-04", "url": "#", "category": "Business"},
+        {"title": "Tennis star wins historic Grand Slam", "body": "The underdog player claimed victory in an epic five-set final at Wimbledon.", "date": "2024-06-05", "url": "#", "category": "Sports"},
+        {"title": "New Alzheimer's drug approved by FDA", "body": "Clinical trials show the medication can slow cognitive decline by up to 40%.", "date": "2024-06-06", "url": "#", "category": "Health"},
+        {"title": "Music festival announces eco-friendly initiatives", "body": "Coachella goes carbon-neutral with solar power and zero-waste policies.", "date": "2024-06-07", "url": "#", "category": "Entertainment"},
+        {"title": "Coral reef restoration project shows major success", "body": "Scientists report 75% recovery in previously damaged reef systems using new techniques.", "date": "2024-06-08", "url": "#", "category": "Environment"},
+        {"title": "Astronomers detect mysterious radio signals from deep space", "body": "Fast radio bursts from distant galaxy puzzle researchers and spark new theories.", "date": "2024-06-09", "url": "#", "category": "Science"},
+        {"title": "Social media platform introduces AI content moderation", "body": "New system promises to detect harmful content 95% faster than human moderators.", "date": "2024-06-10", "url": "#", "category": "Technology"},
+        {"title": "Cryptocurrency market rebounds after regulatory clarity", "body": "Bitcoin surges 25% following new government guidelines for digital assets.", "date": "2024-06-11", "url": "#", "category": "Business"},
+        {"title": "World Cup qualifying matches produce shocking upsets", "body": "Underdog teams advance as favorites stumble in dramatic elimination rounds.", "date": "2024-06-12", "url": "#", "category": "Sports"},
+        
     ]
 
     def get_static_articles(self):
         """Returns the static pool of articles for simulation."""
         return self.STATIC_ARTICLES
+    def generate_briefing(self, articles):
+        """
+        Generates a structured list of summaries for the top 3 articles.
+        Returns: List[Dict] -> [{'id': 1, 'title': '...', 'summary': '...'}]
+        """
+        if not articles:
+            return []
+
+        # Check if the model actually loaded
+        if self.summarizer is None:
+            return [{"id": 0, "title": "System Error", "summary": "Summarization model failed to load."}]
+
+        print("Generating summary for top 3 articles...")
+        
+        # 1. Select only the top 3 articles
+        top_3 = articles[:3] 
+        briefing_data = []  # We will store objects here, not strings
+
+        # 2. Loop through each of the top 3
+        for i, article in enumerate(top_3, 1):
+            title = article.get('title', 'No Title')
+            body = article.get('body', '')
+            
+            # Prepare text 
+            input_text = f"summarize: {body[:600]}"
+            
+            try:
+                # Generate summary
+                results = self.summarizer(input_text, max_length=60, min_length=20, do_sample=False)
+                summary_text = results[0]['generated_text']
+            except Exception as e:
+                print(f"Error summarizing article {i}: {e}")
+                summary_text = "Error generating summary."
+            
+            # 3. STRUCTURED DATA: Append a dictionary
+            briefing_data.append({
+                "id": i,
+                "title": title,
+                "summary": summary_text
+            })
+
+        # 4. Return the list directly (Flask's jsonify will handle it automatically)
+        return briefing_data
 
     def recommend_articles(self, num_recommendations=25):
         print(f"\n [STATIC] Using Static Article Pool ({len(self.STATIC_ARTICLES)} articles)...")

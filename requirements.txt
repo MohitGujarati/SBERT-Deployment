@@ -4,3 +4,7 @@ scikit-learn
 python-dotenv
 numpy
 gunicorn
+transformers
+torch
+accelerate
+
